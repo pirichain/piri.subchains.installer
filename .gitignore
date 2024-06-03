@@ -1,0 +1,17 @@
+node_modules
+
+app
+/.idea
+.idea
+/.cache
+.cache
+types
+.eslintrc.cjs
+env.d.ts
+postcss.config.cjs
+tsconfig.json
+
+package-lock.json
+/setting/
+/address/
+/agent/

@@ -1,0 +1,1 @@
+import{B as n,r as s}from"./components-CZY7GKuT.js";import{u}from"./use-isomorphic-effect-DQNVtUGV.js";import{r as i}from"./notifications.store-_izSuKO4.js";const d=n.useId||(()=>{});function a(){const t=d();return t?`mantine-${t.replace(/:/g,"")}`:""}function p(t){const e=a(),[r,o]=s.useState(e);return u(()=>{o(i())},[]),typeof t=="string"?t:typeof window>"u"?e:r}export{p as u};
