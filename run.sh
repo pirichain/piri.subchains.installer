@@ -62,6 +62,7 @@ npm install
 
 mkdir -p public/assets && cp -r build/client/assets/* public/assets
 
+pm2 delete piri.subchains.installer
 # run the application on port 7473
 pm2 start "npm start" --name "piri.subchains.installer" --log-date-format "DD-MM-YYYY HH:mm"
 
