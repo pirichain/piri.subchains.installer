@@ -1,3 +1,4 @@
+git stash
 pm2 delete "piri.subchains.installer"
 git pull
 npm install
