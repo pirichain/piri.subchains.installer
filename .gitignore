@@ -1,6 +1,14 @@
 node_modules
 
-app
+app/assets
+app/components
+app/routes
+app/utils
+
+app/entry.client.tsx
+app/entry.server.tsx
+app/root.tsx
+
 /.idea
 .idea
 /.cache
