@@ -430,7 +430,7 @@ const controlLicence = async (request) => {
   urlencoded.append("_0xff", nodeCode);
   urlencoded.append("_0xfa", licenceKey);
   urlencoded.append("_0xa", clientHash);
-  urlencoded.append("_0xc", nodeName ?? _hostName);
+  urlencoded.append("_0xc", nodeName ? hexEncode(nodeName) : _hostName);
   const address = getAddressFromFile();
   urlencoded.append("_0xafa", typeof address === "string" ? address : address.pub);
   const response = await sendRequest(request, "/network/validateInstallationCode", "POST", urlencoded);
