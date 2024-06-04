@@ -14,7 +14,7 @@ import * as process from "node:process";
 import process__default from "node:process";
 import * as os from "node:os";
 import EC from "elliptic";
-import base58check from "base58check";
+import base58Check from "@pirichain/base58check";
 import RIPEMD160 from "ripemd160";
 import sha256 from "sha256";
 import bip39 from "bip39";
@@ -400,6 +400,7 @@ const controlLicenceParameters = async (request) => {
   const clientHash = formData.get("clientHash");
   const nodeCode = formData.get("nodeCode");
   const licenceKey = formData.get("licenceKey");
+  const nodeName = formData.get("nodeName");
   const errors = {};
   if (!/^[0-9A-Fa-f]{64}$/.test(clientHash))
     errors.clientHash = "Invalid Client Service! Please check your service is installed!";
@@ -409,7 +410,7 @@ const controlLicenceParameters = async (request) => {
     errors.nodeCode = "Invalid Node Installation Code";
   if (Object.keys(errors).length > 0)
     return { errors };
-  return { clientHash, nodeCode, licenceKey };
+  return { clientHash, nodeCode, licenceKey, nodeName };
 };
 function hexEncode(str) {
   let hex, i;
@@ -422,14 +423,14 @@ function hexEncode(str) {
 }
 const controlLicence = async (request) => {
   const _hostName = hexEncode(os.hostname());
-  const { errors, clientHash, nodeCode, licenceKey } = await controlLicenceParameters(request);
+  const { errors, clientHash, nodeCode, licenceKey, nodeName } = await controlLicenceParameters(request);
   if (errors)
     return { errors };
   const urlencoded = new URLSearchParams();
   urlencoded.append("_0xff", nodeCode);
   urlencoded.append("_0xfa", licenceKey);
   urlencoded.append("_0xa", clientHash);
-  urlencoded.append("_0xc", _hostName);
+  urlencoded.append("_0xc", nodeName ?? _hostName);
   const address = getAddressFromFile();
   urlencoded.append("_0xafa", typeof address === "string" ? address : address.pub);
   const response = await sendRequest(request, "/network/validateInstallationCode", "POST", urlencoded);
@@ -466,7 +467,7 @@ const createAddress = () => {
   hashLast = sha256.x2(hashLast);
   const firstByte = hashLast.substr(0, 8);
   const resultStr = secondHash + firstByte;
-  const b58 = base58check.encode(resultStr, prefix);
+  const b58 = base58Check.encode(resultStr, prefix);
   bip39.setDefaultWordlist("english");
   const words = bip39.entropyToMnemonic(privateKey);
   return { data: { pri: privateKey, pub: "PR" + b58, words, publicKey: _publicKey } };
@@ -823,6 +824,7 @@ function getStrength(password) {
 }
 const subchains_lottie = "/assets/subchains-BU8G9jTW.lottie";
 const loader$2 = async ({ request }) => {
+  await controlReq(request);
   const dir = path__default.join(process__default.cwd(), "app");
   const filePath = path__default.join(dir, "commands", "install.sh");
   const data = fs__default.readFileSync(filePath, "utf8");
@@ -1384,17 +1386,19 @@ const loader = async ({ request }) => {
         console.error(`Error: ${error}`);
       }
     const address = getAddressFromFile();
-    return { clientHash, address };
+    const hostName = os.hostname();
+    return { clientHash, address, hostName };
   }
 };
 function New() {
   var _a, _b;
-  const { clientHash, address } = useLoaderData();
+  const { clientHash, address, hostName } = useLoaderData();
   const navigate = useNavigate();
   const navigation = useNavigation();
   const actionData = useActionData();
   const [nodeCode, setNodeCode] = useState("");
   const [licenceKey, setLicenceKey] = useState("");
+  const [nodeName, setNodeName] = useState(hostName || "");
   useEffect(() => {
     if (actionData == null ? void 0 : actionData.errors) {
       showNotification({
@@ -1457,6 +1461,20 @@ function New() {
               error: ((_b = actionData == null ? void 0 : actionData.errors) == null ? void 0 : _b.licenceKey) ?? false,
               onChange: (event) => setLicenceKey(event.currentTarget.value),
               leftSection: /* @__PURE__ */ jsx(IconKey, { size: 16 }),
+              size: "sm"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            TextInput,
+            {
+              placeholder: "Enter your Node Name",
+              w: "100%",
+              name: "nodeName",
+              description: "Enter your Node Name (or you may leave to use pc-name)",
+              radius: "sm",
+              value: nodeName,
+              onChange: (event) => setNodeName(event.currentTarget.value),
+              leftSection: /* @__PURE__ */ jsx(IconTag, { size: 16 }),
               size: "sm"
             }
           )
@@ -1571,7 +1589,7 @@ const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: New,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-DMUAxwCj.js", "imports": ["/assets/components-CZY7GKuT.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/root-Cxm8B5c0.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/Image-Ct1pls2y.js", "/assets/Paper-D0iSLQwC.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js"], "css": ["/assets/root-DnJZv8g3.css"] }, "routes/requirements": { "id": "routes/requirements", "parentId": "root", "path": "requirements", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/requirements-DkNDcweg.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/use-id-DMbamNUz.js", "/assets/IconBug-DgH8Znyx.js", "/assets/IconX-B9nYs4vA.js", "/assets/Divider-CQk2a885.js", "/assets/List-DLN5rbDt.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/Paper-D0iSLQwC.js", "/assets/Image-Ct1pls2y.js", "/assets/CopyButton-DFjZeD3C.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/validate": { "id": "routes/validate", "parentId": "root", "path": "validate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/validate-Bk6aQxo7.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-id-DMbamNUz.js", "/assets/IconX-B9nYs4vA.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/_index-DOwc-FgX.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/List-DLN5rbDt.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/node": { "id": "routes/node", "parentId": "root", "path": "node", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/node-CyyICaw4.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/notifications.store-_izSuKO4.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconRefresh-JVf4mcDn.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/new": { "id": "routes/new", "parentId": "root", "path": "new", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/new-BSEkClu9.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/use-id-DMbamNUz.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/Divider-CQk2a885.js", "/assets/IconRefresh-JVf4mcDn.js", "/assets/CopyButton-DFjZeD3C.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] } }, "url": "/assets/manifest-3ae83c2b.js", "version": "3ae83c2b" };
+const serverManifest = { "entry": { "module": "/assets/entry.client-DMUAxwCj.js", "imports": ["/assets/components-CZY7GKuT.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/root-Cxm8B5c0.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/Image-Ct1pls2y.js", "/assets/Paper-D0iSLQwC.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js"], "css": ["/assets/root-DnJZv8g3.css"] }, "routes/requirements": { "id": "routes/requirements", "parentId": "root", "path": "requirements", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/requirements-DkNDcweg.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/use-id-DMbamNUz.js", "/assets/IconBug-DgH8Znyx.js", "/assets/IconX-B9nYs4vA.js", "/assets/Divider-CQk2a885.js", "/assets/List-DLN5rbDt.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/Paper-D0iSLQwC.js", "/assets/Image-Ct1pls2y.js", "/assets/CopyButton-DFjZeD3C.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/validate": { "id": "routes/validate", "parentId": "root", "path": "validate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/validate-Bk6aQxo7.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-id-DMbamNUz.js", "/assets/IconX-B9nYs4vA.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/_index-DOwc-FgX.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/List-DLN5rbDt.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/node": { "id": "routes/node", "parentId": "root", "path": "node", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/node-Ct75lViN.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/notifications.store-_izSuKO4.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/IconTag-D2Zk87m9.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/new": { "id": "routes/new", "parentId": "root", "path": "new", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/new-CKbpxHDT.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/use-id-DMbamNUz.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/Divider-CQk2a885.js", "/assets/IconTag-D2Zk87m9.js", "/assets/CopyButton-DFjZeD3C.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] } }, "url": "/assets/manifest-2dbc5e81.js", "version": "2dbc5e81" };
 const mode = "production";
 const assetsBuildDirectory = "build\\client";
 const basename = "/";

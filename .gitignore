@@ -18,6 +18,7 @@ types
 env.d.ts
 postcss.config.cjs
 tsconfig.json
+remix-0.cpuprofile
 
 package-lock.json
 /setting/
