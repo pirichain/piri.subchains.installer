@@ -2,12 +2,13 @@
 ## PIRISUBCHAIN NODE INSTALLER
 
 Installation & Server Requirements
-|  |  |
+| Service   | Version           |
 |--|--|
-| Ubuntu 	| 20.04 			|
-| Node.js	| 20.0.5			|
-| npm		| related node js	|
-| Redis		| 6.0				|
+| Ubuntu 	| 20.04.6 			|
+| Node.js	| Major: 20			|
+| npm		| depend on node.js	|
+| MongoDB	| 5.0				|
+| Redis		| 6.0.8				|
 
 
 Pirichain Technology opens a new door to the blockchain world with the Pirisubchain system, which allows you to create your own independent sub-chains and blockchain network.
