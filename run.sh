@@ -2,6 +2,9 @@
 
 cd ~/piri.subchains.installer
 
+# Disable IPv6 until all is done!
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+
 echo "Removing ~/bin directory from the PATH variable..."
 sed -i "/export PATH=\$PATH:~/bin/d" ~/.bashrc
 
