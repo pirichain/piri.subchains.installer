@@ -1,5 +1,12 @@
+<center>
+
 ![Pirisubchain](https://static.pirichain.com/logo%2Fpng%2Fsubchain%2Fpng%2Ftransparent%2F320_60%2Flogo.png)
+
 ## PIRISUBCHAIN NODE INSTALLER
+
+![Pirichain Technology](https://static.pirichain.com/logo%2Fpng%2Ftransparent%2Fpiri-brand-logo.png)
+
+</center>
 
 Installation & Server Requirements
 | Service   | Version           |
