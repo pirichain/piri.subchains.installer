@@ -583,10 +583,8 @@ const controlReq = async (request) => {
   const mongo = await checkMongoDB();
   const redis = await checkRedis();
   const path2 = new URL(request.url).pathname;
-  console.log(path2, ubuntu, mongo, redis);
   if ((ubuntu.error || mongo.error || redis.error) && !path2.trim().endsWith("requirements")) {
-    console.log("here --> ", !path2.trim().endsWith("requirements"), typeof path2, ubuntu.error || mongo.error || redis.error);
-    return redirect("/requirements");
+    throw redirect("/requirements");
   } else
     return { ubuntu, mongo, redis };
 };
@@ -612,7 +610,8 @@ const classes = {
   title
 };
 const loader$3 = async ({ request }) => {
-  return await controlReq(request);
+  const result = await controlReq(request);
+  return result;
 };
 const RequirementRow = ({ item }) => {
   const [opened, { close, open }] = useDisclosure(false);
