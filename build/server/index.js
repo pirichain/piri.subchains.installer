@@ -318,9 +318,8 @@ const controlLicence = async (request) => {
   if (errors)
     return { errors };
   const address = getAddressFromFile();
-  console.log(address);
   const urlencoded = new URLSearchParams();
-  urlencoded.append("_0xd", address.pub.subString(0, 2));
+  urlencoded.append("_0xd", address.pub.toString().substring(0, 2));
   urlencoded.append("_0xff", nodeCode);
   urlencoded.append("_0xfa", licenceKey);
   urlencoded.append("_0xa", clientHash);
@@ -367,7 +366,6 @@ const createAddress = (addressPrefix) => {
   return { data: { pri: privateKey, pub: addressPrefix + b58, words, publicKey: _publicKey } };
 };
 const getAddressFromFile = (addressPrefix) => {
-  console.log("addressPrefix : ", addressPrefix);
   const dir = path.join(process.cwd(), "address");
   const filePath = path.join(dir, "node.json");
   if (!fs.existsSync(dir))
