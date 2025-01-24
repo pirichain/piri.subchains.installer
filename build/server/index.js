@@ -584,9 +584,10 @@ const controlReq = async (request) => {
   const redis = await checkRedis();
   const path2 = new URL(request.url).pathname;
   console.log(path2, ubuntu, mongo, redis);
-  if ((ubuntu.error || mongo.error || redis.error) && !path2.trim().endsWith("requirements"))
+  if ((ubuntu.error || mongo.error || redis.error) && !path2.trim().endsWith("requirements")) {
+    console.log("here --> ", !path2.trim().endsWith("requirements"), typeof path2, ubuntu.error || mongo.error || redis.error);
     throw redirect("/requirements");
-  else
+  } else
     return { ubuntu, mongo, redis };
 };
 async function getExternalIp() {
