@@ -70,9 +70,11 @@ function handleBotRequest(request, responseStatusCode, responseHeaders, remixCon
           pipe(body);
         },
         onShellError(error) {
+          console.log("bot-shell-error: ", error);
           reject(error);
         },
         onError(error) {
+          console.log("bot-error : ", error);
           responseStatusCode = 500;
           if (shellRendered) {
             console.error(error);
@@ -110,9 +112,11 @@ function handleBrowserRequest(request, responseStatusCode, responseHeaders, remi
           pipe(body);
         },
         onShellError(error) {
+          console.log("browser-shell-error: ", error);
           reject(error);
         },
         onError(error) {
+          console.log("browser-error: ", error);
           responseStatusCode = 500;
           if (shellRendered) {
             console.error(error);
