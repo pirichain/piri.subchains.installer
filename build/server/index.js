@@ -1478,6 +1478,7 @@ const action = async ({ request }) => {
   const formData = await request.clone().formData();
   if (formData.getAll("type")[0] === "refreshAddress") {
     const prefix = formData.get("prefix");
+    console.log(prefix);
     regenerateNewAddress(prefix);
     return null;
   }
