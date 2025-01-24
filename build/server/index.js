@@ -402,7 +402,6 @@ const controlLicenceParameters = async (request) => {
   const nodeCode = formData.get("nodeCode");
   const licenceKey = formData.get("licenceKey");
   const nodeName = formData.get("nodeName");
-  const prefix = formData.get("prefix");
   const errors = {};
   if (!/^[0-9A-Fa-f]{64}$/.test(clientHash))
     errors.clientHash = "Invalid Client Service! Please check your service is installed!";
@@ -410,11 +409,9 @@ const controlLicenceParameters = async (request) => {
     errors.licenceKey = "Invalid Licence Key Format!";
   if (!/^\d{9}$/.test(nodeCode))
     errors.nodeCode = "Invalid Node Installation Code";
-  if (!/^[A-Z]{2}$/.test(prefix))
-    errors.prefix = "Invalid Prefix";
   if (Object.keys(errors).length > 0)
     return { errors };
-  return { clientHash, nodeCode, licenceKey, nodeName, prefix };
+  return { clientHash, nodeCode, licenceKey, nodeName };
 };
 function hexEncode(str) {
   let hex, i;
@@ -427,16 +424,16 @@ function hexEncode(str) {
 }
 const controlLicence = async (request) => {
   const _hostName = hexEncode(os.hostname());
-  const { errors, clientHash, nodeCode, licenceKey, nodeName, prefix } = await controlLicenceParameters(request);
+  const { errors, clientHash, nodeCode, licenceKey, nodeName } = await controlLicenceParameters(request);
   if (errors)
     return { errors };
+  const address = getAddressFromFile();
   const urlencoded = new URLSearchParams();
-  urlencoded.append("_0xd", prefix ?? "PR");
+  urlencoded.append("_0xd", address.pub.subString(0, 2));
   urlencoded.append("_0xff", nodeCode);
   urlencoded.append("_0xfa", licenceKey);
   urlencoded.append("_0xa", clientHash);
   urlencoded.append("_0xc", nodeName ? hexEncode(nodeName) : _hostName);
-  const address = getAddressFromFile();
   urlencoded.append("_0xafa", typeof address === "string" ? address : address.pub);
   const response = await sendRequest(request, "/network/validateInstallationCode", "POST", urlencoded);
   return { response };
@@ -459,7 +456,7 @@ async function sendRequest(request, endPoint, method, body, encodedType) {
     return { error: 1, message: error };
   }
 }
-const createAddress = () => {
+const createAddress = (addressPrefix) => {
   const key = ec.genKeyPair();
   const prefix = "83";
   let publicKey = key.getPublic("hex");
@@ -475,15 +472,16 @@ const createAddress = () => {
   const b58 = base58check.encode(resultStr, prefix);
   bip39.setDefaultWordlist("english");
   const words = bip39.entropyToMnemonic(privateKey);
-  return { data: { pri: privateKey, pub: "PR" + b58, words, publicKey: _publicKey } };
+  addressPrefix = addressPrefix && /^[A-Z]{2}$/.test(addressPrefix) ? addressPrefix : "PR";
+  return { data: { pri: privateKey, pub: addressPrefix + b58, words, publicKey: _publicKey } };
 };
-const getAddressFromFile = () => {
+const getAddressFromFile = (addressPrefix) => {
   const dir = path.join(process.cwd(), "address");
   const filePath = path.join(dir, "node.json");
   if (!fs.existsSync(dir))
     fs.mkdirSync(dir);
   if (!fs.existsSync(filePath)) {
-    const { data: address } = createAddress();
+    const { data: address } = createAddress(addressPrefix);
     fs.writeFileSync(filePath, JSON.stringify(address, null, 2));
     return address;
   } else {
@@ -491,12 +489,12 @@ const getAddressFromFile = () => {
     return JSON.parse(data);
   }
 };
-const regenerateNewAddress = () => {
+const regenerateNewAddress = (addressPrefix) => {
   const dir = path.join(process.cwd(), "address");
   const filePath = path.join(dir, "genesis.json");
   if (fs.existsSync(filePath))
     fs.unlinkSync(filePath);
-  return getAddressFromFile();
+  return getAddressFromFile(addressPrefix);
 };
 const saveNodesInfo = (nodes) => {
   const dir = path.join(process.cwd(), "setting");
@@ -1483,24 +1481,6 @@ function New() {
               leftSection: /* @__PURE__ */ jsx(IconTag, { size: 16 }),
               size: "sm"
             }
-          ),
-          /* @__PURE__ */ jsx(
-            TextInput,
-            {
-              placeholder: "Enter your Chain Prefix",
-              w: "100%",
-              maxLength: 2,
-              name: "prefix",
-              description: "Enter your Chain Prefix as 2 Char (e.g. PR)",
-              radius: "sm",
-              value: prefix,
-              onChange: (event) => {
-                var _a2;
-                return setPrefix((_a2 = event.currentTarget.value) == null ? void 0 : _a2.toUpperCase());
-              },
-              leftSection: /* @__PURE__ */ jsx(IconHexagonLetterP, { size: 16 }),
-              size: "sm"
-            }
           )
         ] })
       ] }),
@@ -1517,20 +1497,40 @@ function New() {
           ] })
         ] }),
         /* @__PURE__ */ jsxs(Group, { justify: "space-between", children: [
-          /* @__PURE__ */ jsx(Form, { method: "POST", children: /* @__PURE__ */ jsx(
-            Button,
-            {
-              type: "submit",
-              name: "type",
-              value: "refreshAddress",
-              variant: "light",
-              size: "compact-sm",
-              radius: "xl",
-              leftSection: /* @__PURE__ */ jsx(IconRefresh, { size: 18 }),
-              px: "md",
-              children: "Generate A New Node Address"
-            }
-          ) }),
+          /* @__PURE__ */ jsxs(Form, { method: "POST", children: [
+            /* @__PURE__ */ jsx(
+              TextInput,
+              {
+                placeholder: "Enter your Chain Prefix",
+                w: "100%",
+                maxLength: 2,
+                name: "prefix",
+                description: "Enter your Chain Prefix as 2 Char (e.g. PR)",
+                radius: "sm",
+                value: prefix,
+                onChange: (event) => {
+                  var _a2;
+                  return setPrefix((_a2 = event.currentTarget.value) == null ? void 0 : _a2.toUpperCase());
+                },
+                leftSection: /* @__PURE__ */ jsx(IconHexagonLetterP, { size: 16 }),
+                size: "sm"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                type: "submit",
+                name: "type",
+                value: "refreshAddress",
+                variant: "light",
+                size: "compact-sm",
+                radius: "xl",
+                leftSection: /* @__PURE__ */ jsx(IconRefresh, { size: 18 }),
+                px: "md",
+                children: "Generate A New Node Address"
+              }
+            )
+          ] }),
           /* @__PURE__ */ jsx(CopyButton, { value: JSON.stringify(address), children: ({ copied, copy }) => /* @__PURE__ */ jsx(
             Button,
             {
@@ -1583,7 +1583,8 @@ function New() {
 const action = async ({ request }) => {
   const formData = await request.clone().formData();
   if (formData.getAll("type")[0] === "refreshAddress") {
-    regenerateNewAddress();
+    const prefix = formData.get("prefix");
+    regenerateNewAddress(prefix);
     return null;
   }
   const { errors, response } = await controlLicence(request);
@@ -1613,7 +1614,7 @@ const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: New,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-DMUAxwCj.js", "imports": ["/assets/components-CZY7GKuT.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/root-BENOO7vG.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/Image-Ct1pls2y.js", "/assets/Paper-D0iSLQwC.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js"], "css": ["/assets/root-KvNauJtR.css"] }, "routes/requirements": { "id": "routes/requirements", "parentId": "root", "path": "requirements", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/requirements-DkNDcweg.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/use-id-DMbamNUz.js", "/assets/IconBug-DgH8Znyx.js", "/assets/IconX-B9nYs4vA.js", "/assets/Divider-CQk2a885.js", "/assets/List-DLN5rbDt.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/Paper-D0iSLQwC.js", "/assets/Image-Ct1pls2y.js", "/assets/CopyButton-DFjZeD3C.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/validate": { "id": "routes/validate", "parentId": "root", "path": "validate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/validate-Bk6aQxo7.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-id-DMbamNUz.js", "/assets/IconX-B9nYs4vA.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/_index-DOwc-FgX.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/List-DLN5rbDt.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/node": { "id": "routes/node", "parentId": "root", "path": "node", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/node-Ct75lViN.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/notifications.store-_izSuKO4.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/IconTag-D2Zk87m9.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/new": { "id": "routes/new", "parentId": "root", "path": "new", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/new-C_KelmNn.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/use-id-DMbamNUz.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/Divider-CQk2a885.js", "/assets/IconTag-D2Zk87m9.js", "/assets/CopyButton-DFjZeD3C.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] } }, "url": "/assets/manifest-33e09031.js", "version": "33e09031" };
+const serverManifest = { "entry": { "module": "/assets/entry.client-DMUAxwCj.js", "imports": ["/assets/components-CZY7GKuT.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/root-BENOO7vG.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/Image-Ct1pls2y.js", "/assets/Paper-D0iSLQwC.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js"], "css": ["/assets/root-KvNauJtR.css"] }, "routes/requirements": { "id": "routes/requirements", "parentId": "root", "path": "requirements", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/requirements-DkNDcweg.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/use-id-DMbamNUz.js", "/assets/IconBug-DgH8Znyx.js", "/assets/IconX-B9nYs4vA.js", "/assets/Divider-CQk2a885.js", "/assets/List-DLN5rbDt.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/Paper-D0iSLQwC.js", "/assets/Image-Ct1pls2y.js", "/assets/CopyButton-DFjZeD3C.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/validate": { "id": "routes/validate", "parentId": "root", "path": "validate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/validate-Bk6aQxo7.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/OptionalPortal-BY2b_zr7.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/use-id-DMbamNUz.js", "/assets/IconX-B9nYs4vA.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/get-contrast-color-BrkR3HQB.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/_index-DOwc-FgX.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/create-safe-context-CWmwl6i8.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/List-DLN5rbDt.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/node": { "id": "routes/node", "parentId": "root", "path": "node", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/node-Ct75lViN.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/notifications.store-_izSuKO4.js", "/assets/IconBug-DgH8Znyx.js", "/assets/Divider-CQk2a885.js", "/assets/IconTag-D2Zk87m9.js", "/assets/Paper-D0iSLQwC.js", "/assets/IconHome-W3Mv4Ipp.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] }, "routes/new": { "id": "routes/new", "parentId": "root", "path": "new", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasErrorBoundary": false, "module": "/assets/new-kQ2oJ6f7.js", "imports": ["/assets/components-CZY7GKuT.js", "/assets/Stack-vIf82SRY.js", "/assets/use-isomorphic-effect-DQNVtUGV.js", "/assets/notifications.store-_izSuKO4.js", "/assets/use-id-DMbamNUz.js", "/assets/welcome.module-BpTZvtAh.js", "/assets/chunk-ZAFYX2AB-Ctu_6Wzb.js", "/assets/IconChecks-Bu0dqPI9.js", "/assets/Divider-CQk2a885.js", "/assets/IconTag-D2Zk87m9.js", "/assets/CopyButton-DFjZeD3C.js", "/assets/IconArrowBack-jmtwtx_s.js"], "css": ["/assets/welcome-CbLAcAOW.css"] } }, "url": "/assets/manifest-1e2e1d84.js", "version": "1e2e1d84" };
 const mode = "production";
 const assetsBuildDirectory = "build\\client";
 const basename = "/";
