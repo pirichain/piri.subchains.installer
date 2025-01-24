@@ -366,6 +366,7 @@ const createAddress = (addressPrefix) => {
   return { data: { pri: privateKey, pub: addressPrefix + b58, words, publicKey: _publicKey } };
 };
 const getAddressFromFile = (addressPrefix) => {
+  console.log("addressPrefix : ", addressPrefix);
   const dir = path.join(process.cwd(), "address");
   const filePath = path.join(dir, "node.json");
   if (!fs.existsSync(dir))
@@ -381,7 +382,7 @@ const getAddressFromFile = (addressPrefix) => {
 };
 const regenerateNewAddress = (addressPrefix) => {
   const dir = path.join(process.cwd(), "address");
-  const filePath = path.join(dir, "genesis.json");
+  const filePath = path.join(dir, "node.json");
   if (fs.existsSync(filePath))
     fs.unlinkSync(filePath);
   return getAddressFromFile(addressPrefix);
@@ -1478,7 +1479,6 @@ const action = async ({ request }) => {
   const formData = await request.clone().formData();
   if (formData.getAll("type")[0] === "refreshAddress") {
     const prefix = formData.get("prefix");
-    console.log(prefix);
     regenerateNewAddress(prefix);
     return null;
   }
