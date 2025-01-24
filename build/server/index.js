@@ -582,7 +582,9 @@ const controlReq = async (request) => {
   const ubuntu = await checkUbuntu();
   const mongo = await checkMongoDB();
   const redis = await checkRedis();
-  if ((ubuntu.error || mongo.error || redis.error) && new URL(request.url).pathname !== "/requirements")
+  const path2 = new URL(request.url).pathname;
+  console.log(path2, ubuntu, mongo, redis);
+  if ((ubuntu.error || mongo.error || redis.error) && path2 !== "/requirements")
     throw redirect("/requirements");
   else
     return { ubuntu, mongo, redis };
