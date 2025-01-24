@@ -318,6 +318,7 @@ const controlLicence = async (request) => {
   if (errors)
     return { errors };
   const address = getAddressFromFile();
+  console.log(address);
   const urlencoded = new URLSearchParams();
   urlencoded.append("_0xd", address.pub.subString(0, 2));
   urlencoded.append("_0xff", nodeCode);
